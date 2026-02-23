@@ -2,24 +2,31 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
-function Login() {
+function Register() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [focused, setFocused] = useState(null);
   const navigate = useNavigate();
 
-  async function handleLogin(e) {
+  async function handleRegister(e) {
     e.preventDefault();
-    setLoading(true);
     setError("");
+
+    if (password !== confirmPassword) {
+      setError("As senhas não coincidem.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const response = await api.post("/auth/login", { email, password });
-      localStorage.setItem("token", response.data.token);
-      navigate("/dashboard"); // troque pela rota que quiser após login
+      await api.post("/auth/register", { name, email, password });
+      navigate("/login");
     } catch (err) {
-      setError(err.response?.data?.error || "Erro ao fazer login. Tente novamente.");
+      setError(err.response?.data?.error || "Erro ao criar conta. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -78,11 +85,11 @@ function Login() {
         <div style={{ zIndex: 1 }}>
           <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "#d4af37", marginBottom: 20 }}>Inteligência Jurídica</p>
           <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(42px, 5vw, 68px)", fontWeight: 300, lineHeight: 1.1, color: "#f0e6c8", marginBottom: 24 }}>
-            Documentos jurídicos,<br />
-            gerados com <em style={{ fontStyle: "italic", color: "#d4af37" }}>precisão.</em>
+            Comece sua jornada<br />
+            <em style={{ fontStyle: "italic", color: "#d4af37" }}>hoje mesmo.</em>
           </h1>
           <p style={{ fontSize: 15, color: "#666680", lineHeight: 1.7, maxWidth: 380, fontWeight: 300 }}>
-            Automatize petições, contratos e pareceres com IA treinada no direito brasileiro.
+            Crie sua conta e tenha acesso imediato à geração inteligente de documentos jurídicos.
           </p>
         </div>
 
@@ -94,8 +101,8 @@ function Login() {
         <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 1, background: "linear-gradient(to bottom, transparent, rgba(212,175,55,0.3), transparent)" }} />
 
         <div style={{ marginBottom: 32 }}>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 36, fontWeight: 400, color: "#1a1a2e", marginBottom: 8 }}>Bem-vindo de volta</h2>
-          <p style={{ fontSize: 14, color: "#888", fontWeight: 300 }}>Entre na sua conta para continuar</p>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 36, fontWeight: 400, color: "#1a1a2e", marginBottom: 8 }}>Criar conta</h2>
+          <p style={{ fontSize: 14, color: "#888", fontWeight: 300 }}>Preencha os dados para começar</p>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 32 }}>
@@ -110,8 +117,17 @@ function Login() {
           </div>
         )}
 
-        <form onSubmit={handleLogin} style={{ width: "100%" }}>
-          <div style={{ marginBottom: 24 }}>
+        <form onSubmit={handleRegister} style={{ width: "100%" }}>
+          <div style={{ marginBottom: 20 }}>
+            <label style={labelStyle("name")}>Nome completo</label>
+            <input
+              type="text" required placeholder="Seu nome" value={name}
+              onFocus={() => setFocused("name")} onBlur={() => setFocused(null)}
+              onChange={(e) => setName(e.target.value)} style={inputStyle("name")}
+            />
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
             <label style={labelStyle("email")}>Endereço de e-mail</label>
             <input
               type="email" required placeholder="seu@email.com" value={email}
@@ -120,16 +136,22 @@ function Login() {
             />
           </div>
 
-          <div style={{ marginBottom: 8 }}>
+          <div style={{ marginBottom: 20 }}>
             <label style={labelStyle("password")}>Senha</label>
             <input
               type="password" required placeholder="••••••••" value={password}
               onFocus={() => setFocused("password")} onBlur={() => setFocused(null)}
               onChange={(e) => setPassword(e.target.value)} style={inputStyle("password")}
             />
-            <a href="#" style={{ display: "block", textAlign: "right", fontSize: 12, color: "#aaa", textDecoration: "none", marginTop: 6 }}>
-              Esqueceu a senha?
-            </a>
+          </div>
+
+          <div style={{ marginBottom: 8 }}>
+            <label style={labelStyle("confirmPassword")}>Confirmar senha</label>
+            <input
+              type="password" required placeholder="••••••••" value={confirmPassword}
+              onFocus={() => setFocused("confirmPassword")} onBlur={() => setFocused(null)}
+              onChange={(e) => setConfirmPassword(e.target.value)} style={inputStyle("confirmPassword")}
+            />
           </div>
 
           <button
@@ -138,32 +160,17 @@ function Login() {
             onMouseLeave={e => { e.currentTarget.style.background = "#1a1a2e"; e.currentTarget.style.color = "#f0e6c8"; }}
             style={{ width: "100%", padding: "15px", marginTop: 16, background: "#1a1a2e", color: "#f0e6c8", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 500, letterSpacing: "0.15em", textTransform: "uppercase", border: "none", borderRadius: 2, cursor: loading ? "not-allowed" : "pointer", transition: "background 0.25s, color 0.25s", boxSizing: "border-box", display: "block", opacity: loading ? 0.7 : 1 }}
           >
-            {loading ? "Entrando..." : "Acessar plataforma"}
+            {loading ? "Criando conta..." : "Criar conta"}
           </button>
         </form>
 
         <p style={{ marginTop: 28, textAlign: "center", fontSize: 13, color: "#aaa", fontWeight: 300 }}>
-          Ainda não tem conta?{" "}
-          <a href="/register" style={{ color: "#d4af37", textDecoration: "none", fontWeight: 500 }}>Criar conta</a>
+          Já tem uma conta?{" "}
+          <a href="/login" style={{ color: "#d4af37", textDecoration: "none", fontWeight: 500 }}>Fazer login</a>
         </p>
-
-        <div style={{ display: "flex", gap: 20, marginTop: 40, paddingTop: 28, borderTop: "1px solid #e8e4dc", flexWrap: "wrap" }}>
-          {[
-            { icon: "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z", label: "Criptografado" },
-            { icon: "M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z", label: "LGPD" },
-            { icon: "M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z", label: "99.9% uptime" },
-          ].map((b) => (
-            <span key={b.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#bbb" }}>
-              <svg viewBox="0 0 24 24" strokeWidth="1.5" style={{ width: 14, height: 14, stroke: "#d4af37", fill: "none", flexShrink: 0 }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d={b.icon} />
-              </svg>
-              {b.label}
-            </span>
-          ))}
-        </div>
       </div>
     </div>
   );
 }
 
-export default Login;
+export default Register;

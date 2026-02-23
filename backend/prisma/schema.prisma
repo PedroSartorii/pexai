@@ -8,9 +8,25 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String
-  email     String   @unique
+  email     String    @unique
   password  String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  processes Process[]
+}
+
+model Process {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  authorName     String
+  defendantName  String
+  cpfCnpj        String
+  vara           String
+  caseValue      Float
+  narrative      String
+  structuredData Json
+  generatedText  String
+  createdAt      DateTime @default(now())
 }
