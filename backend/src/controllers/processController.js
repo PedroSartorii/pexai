@@ -37,6 +37,8 @@ exports.createProcess = async (req, res) => {
 
     res.status(201).json({ message: "Processo criado com sucesso.", process });
   } catch (error) {
+    console.error("ERRO MENSAGEM:", error.message);
+    console.error("ERRO COMPLETO:", error);
     console.error("Erro ao criar processo:", error);
     res.status(500).json({ error: "Erro interno ao criar processo." });
   }

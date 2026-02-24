@@ -1,7 +1,7 @@
 require("dotenv").config();
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenAI } = require("@google/genai");
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 function buildPrompt(data) {
   return `
@@ -30,14 +30,14 @@ ${data.narrative}
 }
 
 async function generateLegalText(data) {
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
   const prompt = buildPrompt(data);
 
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+  });
 
-  return response.text();
+  return response.text;
 }
 
 module.exports = { buildPrompt, generateLegalText };
