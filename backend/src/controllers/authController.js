@@ -1,8 +1,9 @@
+require("dotenv").config();
 const prisma = require("../prisma");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const JWT_SECRET = "supersecret"; // depois vamos mover para .env
+const JWT_SECRET = process.env.JWT_SECRET;
 
 exports.register = async (req, res) => {
   try {
@@ -18,12 +19,8 @@ exports.register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword
-      }
+    await prisma.user.create({
+      data: { name, email, password: hashedPassword }
     });
 
     res.json({ message: "Usuário criado com sucesso" });

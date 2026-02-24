@@ -1,7 +1,7 @@
 require("dotenv").config();
-const OpenAI = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 function buildPrompt(data) {
   return `
@@ -26,28 +26,18 @@ ${data.narrative}
 - Estruture o texto em: Qualificação das Partes, Dos Fatos, Do Direito, Do Pedido
 - Finalize com local, data e espaço para assinatura do advogado
 - Seja objetivo e preciso
-`.trim();
+  `.trim();
 }
 
 async function generateLegalText(data) {
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
   const prompt = buildPrompt(data);
 
-  const response = await client.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content: "Você é um advogado experiente especializado em redigir peças jurídicas no Brasil.",
-      },
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
-    temperature: 0.4,
-  });
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
 
-  return response.choices[0].message.content;
+  return response.text();
 }
 
 module.exports = { buildPrompt, generateLegalText };
