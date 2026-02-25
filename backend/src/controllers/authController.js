@@ -8,6 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    console.log("Tentando cadastrar:", email);
 
     const existingUser = await prisma.user.findUnique({
       where: { email }
@@ -25,6 +26,8 @@ exports.register = async (req, res) => {
 
     res.json({ message: "Usuário criado com sucesso" });
   } catch (error) {
+    console.error("ERRO NO REGISTER:", error.message);
+    console.error("STACK:", error.stack);
     res.status(500).json({ error: "Erro interno" });
   }
 };
