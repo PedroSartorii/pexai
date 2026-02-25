@@ -1,8 +1,6 @@
 require("dotenv").config();
 const { GoogleGenAI } = require("@google/genai");
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 function buildPrompt(data) {
   return `
 Você é um assistente jurídico especializado em direito brasileiro.
@@ -30,6 +28,7 @@ ${data.narrative}
 }
 
 async function generateLegalText(data) {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   const prompt = buildPrompt(data);
 
   const response = await ai.models.generateContent({
