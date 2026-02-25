@@ -17,6 +17,8 @@ app.use(cors({
 
 app.use(express.json());
 
+app.get("/health", (req, res) => res.status(200).send("OK"));
+
 app.use("/auth", authRoutes);
 app.use("/process", processRoutes);
 
@@ -24,17 +26,8 @@ app.get("/", (req, res) => {
   res.json({ message: "API PexAI funcionando" });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor rodando na porta ${PORT}`);
-});
-
-process.on("uncaughtException", (err) => {
-  console.error("CRASH - uncaughtException:", err.message);
-  console.error(err.stack);
-});
-
-process.on("unhandledRejection", (reason) => {
-  console.error("CRASH - unhandledRejection:", reason);
 });
