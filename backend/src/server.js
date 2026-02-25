@@ -29,3 +29,12 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
+process.on("uncaughtException", (err) => {
+  console.error("CRASH - uncaughtException:", err.message);
+  console.error(err.stack);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("CRASH - unhandledRejection:", reason);
+});
