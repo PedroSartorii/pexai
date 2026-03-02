@@ -14,6 +14,12 @@ model User {
   password  String
   createdAt DateTime  @default(now())
   processes Process[]
+  clients   Client[]
+  qualifications Qualification[]
+  processTitles  ProcessTitle[]
+  juizos  Juizo[]
+  acoes  Acao[]
+  processos  Processo[]
 }
 
 model Process {
@@ -29,4 +35,220 @@ model Process {
   structuredData Json
   generatedText  String
   createdAt      DateTime @default(now())
+}
+
+model Client {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+
+  // Tipo de pessoa jurídica ou física
+  tipoPessoa        PessoaType
+
+  // Dados pessoais ou empresariais
+  nome              String   // Nome completo ou razão social
+  cpfCnpj           String   @unique
+  rgInscricaoEstadual String?
+
+  // Qualificação
+  estadoCivil       String?
+  profissao         String?
+
+  // Contatos
+  email             String?
+  telefoneCelular   String?
+  telefoneFixo      String?
+
+  // Endereço
+  cep               String?
+  logradouro        String?
+  numero            String?
+  complemento       String?
+  bairro            String?
+  cidade            String?
+  uf                String?
+
+  // Dados bancários opcionais (pode ser JSON para flexibilidade)
+  dadosBancarios    Json?
+
+  createdAt         DateTime @default(now())
+  processosCliente  ProcessoCliente[]
+} 
+
+enum PessoaType {
+  FISICA
+  JURIDICA
+}
+
+model Qualification {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  nome        String
+  descricao   String?
+  polo        PoloType
+  createdAt   DateTime @default(now())
+  processosCliente  ProcessoCliente[]
+}
+
+enum PoloType {
+  ATIVO
+  PASSIVO
+  OUTROS
+}
+
+enum AreaDireito {
+  CIVIL
+  TRABALHISTA
+  PENAL
+  TRIBUTARIO
+  ADMINISTRATIVO
+  PREVIDENCIARIO
+  CONSUMIDOR
+  FAMILIA
+  EMPRESARIAL
+  AMBIENTAL
+  OUTROS
+}
+
+enum Prioridade {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+model ProcessTitle {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  titulo      String
+  areaDireito AreaDireito
+  prioridade  Prioridade
+  createdAt   DateTime    @default(now())
+}
+
+enum Instancia {
+  PRIMEIRA
+  SEGUNDA
+  SUPERIOR
+}
+
+model Juizo {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  tribunal      String
+  comarca       String
+  instancia     Instancia
+  orgaoJulgador String
+  cep           String?
+  logradouro    String?
+  numero        String?
+  complemento   String?
+  bairro        String?
+  cidade        String?
+  uf            String?
+  createdAt     DateTime @default(now())
+  processos  Processo[]
+}
+
+enum RitoProcessual {
+  COMUM
+  SUMARISSIMO
+  ESPECIAL
+}
+
+model Acao {
+  id                String         @id @default(uuid())
+  userId            String
+  user              User           @relation(fields: [userId], references: [id])
+  nomeAcao          String
+  fundamentacao     String?
+  valorCausa        Float?
+  rito              RitoProcessual
+  createdAt         DateTime       @default(now())
+  processos  Processo[]
+}
+
+enum AcessoType {
+  PUBLICO
+  PRIVADO
+  ENVOLVIDOS
+}
+
+enum CustoTipo {
+  CUSTAS
+  HONORARIOS
+  PERICIA
+  DILIGENCIA
+  OUTROS
+}
+
+model Processo {
+  id              String              @id @default(uuid())
+  userId          String
+  user            User                @relation(fields: [userId], references: [id])
+  pasta           String?
+  titulo          String
+  numeroProcesso  String?
+  linkTribunal    String?
+  objeto          String?
+  valorCausa      Float?
+  distribuidoEm   DateTime?
+  valorCondenacao Float?
+  observacoes     String?
+  responsavel     String?
+  acesso          AcessoType          @default(PRIVADO)
+  movimentacao    String?
+  honorarios      String?
+  parcerias       String?
+  prazos          String?
+  generatedText   String?
+  juizoId         String?
+  juizo           Juizo?              @relation(fields: [juizoId], references: [id])
+  juizoLivre      String?
+  acaoId          String?
+  acao            Acao?               @relation(fields: [acaoId], references: [id])
+  acaoLivre       String?
+  instancia       Instancia?
+  clientes        ProcessoCliente[]
+  envolvidos      ProcessoEnvolvido[]
+  custos          CustoProcessual[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+model ProcessoCliente {
+  id             String         @id @default(uuid())
+  processoId     String
+  processo       Processo       @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  clienteId      String?
+  cliente        Client?        @relation(fields: [clienteId], references: [id])
+  clienteLivre   String?
+  qualificacaoId String?
+  qualificacao   Qualification? @relation(fields: [qualificacaoId], references: [id])
+  qualLivre      String?
+}
+
+model ProcessoEnvolvido {
+  id         String   @id @default(uuid())
+  processoId String
+  processo   Processo @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  nome       String
+  papel      String?
+  documento  String?
+  contato    String?
+}
+
+model CustoProcessual {
+  id         String    @id @default(uuid())
+  processoId String
+  processo   Processo  @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  descricao  String
+  valor      Float
+  data       DateTime
+  tipo       CustoTipo
+  pago       Boolean   @default(false)
+  createdAt  DateTime  @default(now())
 }
