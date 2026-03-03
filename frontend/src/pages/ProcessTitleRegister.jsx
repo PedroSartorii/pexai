@@ -1,299 +1,183 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
-import Sidebar from "../components/Sidebar";
 
-const AREA_OPTIONS = [
-  { value: "CIVIL",          label: "Direito Civil" },
-  { value: "TRABALHISTA",    label: "Direito Trabalhista" },
-  { value: "PENAL",          label: "Direito Penal" },
-  { value: "TRIBUTARIO",     label: "Direito Tributário" },
-  { value: "ADMINISTRATIVO", label: "Direito Administrativo" },
-  { value: "PREVIDENCIARIO", label: "Direito Previdenciário" },
-  { value: "CONSUMIDOR",     label: "Direito do Consumidor" },
-  { value: "FAMILIA",        label: "Direito de Família" },
-  { value: "EMPRESARIAL",    label: "Direito Empresarial" },
-  { value: "AMBIENTAL",      label: "Direito Ambiental" },
-  { value: "OUTROS",         label: "Outros" },
-];
-
-const PRIORIDADE_OPTIONS = [
-  { value: "BAIXA",   label: "Baixa",   color: "#6dc87a" },
-  { value: "MEDIA",   label: "Média",   color: "#d4af37" },
-  { value: "ALTA",    label: "Alta",    color: "#fb923c" },
-  { value: "URGENTE", label: "Urgente", color: "#f87171" },
-];
-
-const EMPTY_FORM = { titulo: "", areaDireito: "CIVIL", prioridade: "MEDIA" };
-
-// ─── Modal ────────────────────────────────────────────────────────────────────
-const ProcessTitleModal = ({ title, onClose, onSaved }) => {
-  const [form, setForm] = useState(title ? { ...EMPTY_FORM, ...title } : EMPTY_FORM);
-  const [errors, setErrors] = useState({});
+function Register() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [focused, setFocused] = useState(null);
+  const navigate = useNavigate();
 
-  const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
-
-  const handleSubmit = async () => {
-    const e = {};
-    if (!form.titulo.trim()) e.titulo = "Obrigatório";
-    if (Object.keys(e).length) { setErrors(e); return; }
+  async function handleRegister(e) {
+    e.preventDefault();
+    setError("");
+    if (password !== confirm) { setError("As senhas não coincidem."); return; }
+    if (password.length < 6) { setError("A senha deve ter pelo menos 6 caracteres."); return; }
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const headers = { Authorization: `Bearer ${token}` };
-      title
-        ? await api.put(`/process-titles/${title.id}`, form, { headers })
-        : await api.post("/process-titles", form, { headers });
-      onSaved();
-      onClose();
+      await api.post("/auth/register", { name, email, password });
+      // Após criar conta, redireciona para planos
+      navigate("/planos");
     } catch (err) {
-      alert(err.response?.data?.message || "Erro ao salvar título.");
-    } finally { setLoading(false); }
-  };
+      setError(err.response?.data?.error || "Erro ao criar conta. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const inputStyle = (error) => ({
-    width: "100%", padding: "10px 14px",
-    background: "#0d0d14",
-    border: `1px solid ${error ? "#cc3333" : "rgba(212,175,55,0.2)"}`,
-    borderRadius: 2, color: "#e0d5b8", fontSize: 13,
-    fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box",
+  const inputStyle = (field) => ({
+    width: "100%", padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
+    fontSize: "15px", fontWeight: 300, color: "#1a1a2e", background: "#fff",
+    border: focused === field ? "1px solid #d4af37" : "1px solid #e0ddd5",
+    borderRadius: "2px", outline: "none",
+    boxShadow: focused === field ? "0 0 0 3px rgba(212,175,55,0.08)" : "none",
+    transition: "border-color 0.25s, box-shadow 0.25s",
+    boxSizing: "border-box", display: "block",
   });
 
-  const labelStyle = {
-    display: "block", fontSize: 10, fontWeight: 500,
-    letterSpacing: "0.15em", textTransform: "uppercase",
-    color: "#666", fontFamily: "'DM Sans', sans-serif", marginBottom: 6,
-  };
+  const labelStyle = (field) => ({
+    display: "block", fontSize: "11px", fontWeight: 500, letterSpacing: "0.15em",
+    textTransform: "uppercase", color: focused === field ? "#d4af37" : "#999",
+    marginBottom: "8px", transition: "color 0.2s", fontFamily: "'DM Sans', sans-serif",
+  });
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", padding: 16 }}>
-      <div style={{ background: "#111118", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 4, width: "100%", maxWidth: 540, display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100vh", display: "flex", background: "#0a0a0f", overflow: "hidden", fontFamily: "'DM Sans', sans-serif" }}>
 
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px 32px", borderBottom: "1px solid rgba(212,175,55,0.1)" }}>
-          <div>
-            <p style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "#d4af37", marginBottom: 4, fontFamily: "'DM Sans', sans-serif" }}>
-              {title ? "Editar" : "Novo"}
-            </p>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 300, color: "#f0e6c8" }}>
-              {title ? "Editar Título" : "Novo Título de Processo"}
-            </h2>
+      {/* Painel Esquerdo */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "56px 64px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: -200, left: -200, width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(212,175,55,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: -100, right: -100, width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(212,175,55,0.05) 0%, transparent 70%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: 80, right: 40, width: 80, height: 80, border: "1px solid rgba(212,175,55,0.15)", transform: "rotate(45deg)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: 120, right: 60, width: 40, height: 40, border: "1px solid rgba(212,175,55,0.1)", transform: "rotate(45deg)", pointerEvents: "none" }} />
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12, zIndex: 1 }}>
+          <div style={{ width: 36, height: 36, background: "linear-gradient(135deg, #d4af37, #f5d55e)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, fill: "#0a0a0f" }}>
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
           </div>
-          <button onClick={onClose}
-            style={{ background: "none", border: "none", color: "#555", fontSize: 20, cursor: "pointer" }}
-            onMouseEnter={e => e.currentTarget.style.color = "#d4af37"}
-            onMouseLeave={e => e.currentTarget.style.color = "#555"}>✕</button>
+          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 600, color: "#f0e6c8", letterSpacing: "0.03em" }}>
+            Pex<span style={{ color: "#d4af37" }}>AI</span>
+          </span>
         </div>
 
-        {/* Body */}
-        <div style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ zIndex: 1 }}>
+          <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "#d4af37", marginBottom: 20 }}>Comece agora</p>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(42px, 5vw, 68px)", fontWeight: 300, lineHeight: 1.1, color: "#f0e6c8", marginBottom: 24 }}>
+            Crie sua conta e<br />
+            experimente o <em style={{ fontStyle: "italic", color: "#d4af37" }}>pexAI.</em>
+          </h1>
+          <p style={{ fontSize: 15, color: "#666680", lineHeight: 1.7, maxWidth: 380, fontWeight: 300 }}>
+            7 dias grátis. Sem cartão de crédito. Cancele quando quiser.
+          </p>
+        </div>
 
-          {/* Título */}
-          <div>
-            <label style={labelStyle}>Título / Nome Sugerido *</label>
+        <div style={{ fontSize: 12, color: "#3a3a50", zIndex: 1 }}>© 2026 PexAI · Todos os direitos reservados</div>
+      </div>
+
+      {/* Painel Direito */}
+      <div style={{ width: "clamp(360px, 40%, 520px)", minHeight: "100vh", background: "#f7f5f0", display: "flex", flexDirection: "column", justifyContent: "center", padding: "64px 56px", position: "relative", boxSizing: "border-box" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 1, background: "linear-gradient(to bottom, transparent, rgba(212,175,55,0.3), transparent)" }} />
+
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 36, fontWeight: 400, color: "#1a1a2e", marginBottom: 8 }}>Criar conta</h2>
+          <p style={{ fontSize: 14, color: "#888", fontWeight: 300 }}>Preencha os dados abaixo para começar</p>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 32 }}>
+          <div style={{ flex: 1, height: 1, background: "#d4af37", opacity: 0.3 }} />
+          <div style={{ width: 6, height: 6, background: "#d4af37", transform: "rotate(45deg)", opacity: 0.6 }} />
+          <div style={{ flex: 1, height: 1, background: "#d4af37", opacity: 0.3 }} />
+        </div>
+
+        {error && (
+          <div style={{ background: "#fff0f0", border: "1px solid #ffcccc", borderRadius: 2, padding: "12px 16px", marginBottom: 24, fontSize: 13, color: "#cc3333" }}>
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleRegister} style={{ width: "100%" }}>
+          <div style={{ marginBottom: 20 }}>
+            <label style={labelStyle("name")}>Nome completo</label>
             <input
-              placeholder='Ex: "Indenizatória contra Empresa X"'
-              value={form.titulo} onChange={set("titulo")}
-              style={inputStyle(errors.titulo)}
+              type="text" required placeholder="Dr. João Silva" value={name}
+              onFocus={() => setFocused("name")} onBlur={() => setFocused(null)}
+              onChange={(e) => setName(e.target.value)} style={inputStyle("name")}
             />
-            {errors.titulo && <span style={{ fontSize: 11, color: "#ff6666", marginTop: 4, display: "block" }}>{errors.titulo}</span>}
           </div>
 
-          {/* Área do Direito */}
-          <div>
-            <label style={labelStyle}>Área do Direito *</label>
-            <select value={form.areaDireito} onChange={set("areaDireito")}
-              style={{ ...inputStyle(false), cursor: "pointer" }}>
-              {AREA_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
+          <div style={{ marginBottom: 20 }}>
+            <label style={labelStyle("email")}>E-mail</label>
+            <input
+              type="email" required placeholder="seu@email.com" value={email}
+              onFocus={() => setFocused("email")} onBlur={() => setFocused(null)}
+              onChange={(e) => setEmail(e.target.value)} style={inputStyle("email")}
+            />
           </div>
 
-          {/* Prioridade */}
-          <div>
-            <label style={labelStyle}>Prioridade *</label>
-            <div style={{ display: "flex", gap: 10 }}>
-              {PRIORIDADE_OPTIONS.map((opt) => (
-                <button key={opt.value} onClick={() => setForm((f) => ({ ...f, prioridade: opt.value }))}
-                  style={{
-                    flex: 1, padding: "10px 8px",
-                    background: form.prioridade === opt.value ? `${opt.color}18` : "transparent",
-                    border: `1px solid ${form.prioridade === opt.value ? opt.color + "66" : "rgba(255,255,255,0.08)"}`,
-                    borderRadius: 2,
-                    color: form.prioridade === opt.value ? opt.color : "#555",
-                    fontSize: 11, fontFamily: "'DM Sans', sans-serif",
-                    letterSpacing: "0.08em", textTransform: "uppercase",
-                    cursor: "pointer", transition: "all 0.2s",
-                  }}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+          <div style={{ marginBottom: 20 }}>
+            <label style={labelStyle("password")}>Senha</label>
+            <input
+              type="password" required placeholder="Mínimo 6 caracteres" value={password}
+              onFocus={() => setFocused("password")} onBlur={() => setFocused(null)}
+              onChange={(e) => setPassword(e.target.value)} style={inputStyle("password")}
+            />
           </div>
-        </div>
 
-        {/* Footer */}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, padding: "20px 32px", borderTop: "1px solid rgba(212,175,55,0.1)" }}>
-          <button onClick={onClose}
-            style={{ padding: "10px 24px", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 2, color: "#666", fontSize: 12, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>
-            Cancelar
-          </button>
-          <button onClick={handleSubmit} disabled={loading}
-            onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = "#d4af37"; e.currentTarget.style.color = "#0a0a0f"; }}}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#d4af37"; }}
-            style={{ padding: "10px 28px", background: "transparent", border: "1px solid rgba(212,175,55,0.4)", borderRadius: 2, color: "#d4af37", fontSize: 12, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.1em", textTransform: "uppercase", cursor: loading ? "not-allowed" : "pointer", transition: "all 0.25s", opacity: loading ? 0.6 : 1 }}>
-            {loading ? "Salvando..." : title ? "Salvar Alterações" : "Cadastrar"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─── Card ─────────────────────────────────────────────────────────────────────
-const ProcessTitleCard = ({ title, onEdit, onDelete }) => {
-  const area = AREA_OPTIONS.find((a) => a.value === title.areaDireito);
-  const prioridade = PRIORIDADE_OPTIONS.find((p) => p.value === title.prioridade);
-
-  return (
-    <div
-      style={{ background: "#111118", border: "1px solid rgba(212,175,55,0.12)", borderRadius: 4, padding: "24px 28px", display: "flex", flexDirection: "column", gap: 12, transition: "border-color 0.2s" }}
-      onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(212,175,55,0.35)"}
-      onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(212,175,55,0.12)"}
-    >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 400, color: "#f0e6c8", lineHeight: 1.3, flex: 1 }}>
-          {title.titulo}
-        </p>
-        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          <button onClick={() => onEdit(title)}
-            style={{ padding: "5px 12px", background: "transparent", border: "1px solid rgba(212,175,55,0.2)", borderRadius: 2, color: "#888", fontSize: 11, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", transition: "all 0.2s" }}
-            onMouseEnter={e => { e.currentTarget.style.color = "#d4af37"; e.currentTarget.style.borderColor = "rgba(212,175,55,0.5)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "#888"; e.currentTarget.style.borderColor = "rgba(212,175,55,0.2)"; }}>
-            Editar
-          </button>
-          <button onClick={() => onDelete(title.id)}
-            style={{ padding: "5px 12px", background: "transparent", border: "1px solid rgba(200,50,50,0.2)", borderRadius: 2, color: "#888", fontSize: 11, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", transition: "all 0.2s" }}
-            onMouseEnter={e => { e.currentTarget.style.color = "#ff6666"; e.currentTarget.style.borderColor = "rgba(200,50,50,0.5)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "#888"; e.currentTarget.style.borderColor = "rgba(200,50,50,0.2)"; }}>
-            Excluir
-          </button>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 10, padding: "3px 10px", border: "1px solid rgba(212,175,55,0.25)", borderRadius: 2, color: "#d4af37", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>
-          {area?.label}
-        </span>
-        <span style={{ fontSize: 10, padding: "3px 10px", border: `1px solid ${prioridade?.color}44`, borderRadius: 2, color: prioridade?.color, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>
-          {prioridade?.label}
-        </span>
-      </div>
-
-      <p style={{ fontSize: 11, color: "#333", fontFamily: "'DM Sans', sans-serif" }}>
-        Criado em {new Date(title.createdAt).toLocaleDateString("pt-BR")}
-      </p>
-    </div>
-  );
-};
-
-// ─── Página Principal ─────────────────────────────────────────────────────────
-export default function ProcessTitleRegister() {
-  const navigate = useNavigate();
-  const [titles, setTitles] = useState([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(null);
-
-  const fetchTitles = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await api.get("/process-titles", { headers: { Authorization: `Bearer ${token}` } });
-      setTitles(res.data);
-    } catch {
-      alert("Erro ao carregar títulos.");
-    } finally { setLoading(false); }
-  };
-
-  useEffect(() => { fetchTitles(); }, []);
-
-  const handleDelete = async (id) => {
-    if (!confirm("Deseja excluir este título?")) return;
-    try {
-      const token = localStorage.getItem("token");
-      await api.delete(`/process-titles/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      setTitles((prev) => prev.filter((t) => t.id !== id));
-    } catch { alert("Erro ao excluir título."); }
-  };
-
-  const filtered = titles.filter((t) =>
-    t.titulo.toLowerCase().includes(search.toLowerCase())
-  );
-
-  return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", fontFamily: "'DM Sans', sans-serif" }}>
-      <Sidebar onLogout={() => { localStorage.removeItem("token"); navigate("/login"); }} />
-
-      <div style={{ marginLeft: 220, flex: 1 }}>
-        {/* Header */}
-        <header style={{ borderBottom: "1px solid rgba(212,175,55,0.12)", padding: "0 48px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
-          <div>
-            <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "#d4af37", marginBottom: 2, fontFamily: "'DM Sans', sans-serif" }}>Gestão</p>
-            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 300, color: "#f0e6c8" }}>Títulos de Processos</h1>
+          <div style={{ marginBottom: 8 }}>
+            <label style={labelStyle("confirm")}>Confirmar senha</label>
+            <input
+              type="password" required placeholder="Repita a senha" value={confirm}
+              onFocus={() => setFocused("confirm")} onBlur={() => setFocused(null)}
+              onChange={(e) => setConfirm(e.target.value)} style={inputStyle("confirm")}
+            />
+            {confirm && password !== confirm && (
+              <span style={{ fontSize: 11, color: "#cc3333", marginTop: 4, display: "block" }}>As senhas não coincidem.</span>
+            )}
+            {confirm && password === confirm && password.length >= 6 && (
+              <span style={{ fontSize: 11, color: "#22c55e", marginTop: 4, display: "block" }}>✓ Senhas coincidem.</span>
+            )}
           </div>
-          <button onClick={() => setModal("new")}
-            style={{ background: "transparent", border: "1px solid rgba(212,175,55,0.3)", color: "#d4af37", padding: "8px 20px", borderRadius: 2, cursor: "pointer", fontSize: 12, fontFamily: "'DM Sans', sans-serif", textTransform: "uppercase", letterSpacing: "0.1em", transition: "all 0.2s" }}
+
+          <button
+            type="submit" disabled={loading}
             onMouseEnter={e => { e.currentTarget.style.background = "#d4af37"; e.currentTarget.style.color = "#0a0a0f"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#d4af37"; }}>
-            + Novo Título
+            onMouseLeave={e => { e.currentTarget.style.background = "#1a1a2e"; e.currentTarget.style.color = "#f0e6c8"; }}
+            style={{ width: "100%", padding: "15px", marginTop: 16, background: "#1a1a2e", color: "#f0e6c8", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 500, letterSpacing: "0.15em", textTransform: "uppercase", border: "none", borderRadius: 2, cursor: loading ? "not-allowed" : "pointer", transition: "background 0.25s, color 0.25s", boxSizing: "border-box", display: "block", opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? "Criando conta..." : "Criar conta grátis"}
           </button>
-        </header>
+        </form>
 
-        <main style={{ padding: "40px 48px" }}>
-          {/* Filtro */}
-          <div style={{ marginBottom: 32, maxWidth: 360 }}>
-            <input
-              style={{ width: "100%", padding: "10px 16px", background: "#111118", border: "1px solid rgba(212,175,55,0.15)", borderRadius: 2, color: "#ccc", fontSize: 13, fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box" }}
-              placeholder="Filtrar por título..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+        <p style={{ marginTop: 28, textAlign: "center", fontSize: 13, color: "#aaa", fontWeight: 300 }}>
+          Já tem conta?{" "}
+          <Link to="/login" style={{ color: "#d4af37", textDecoration: "none", fontWeight: 500 }}>
+            Fazer login
+          </Link>
+        </p>
 
-          {/* Grid */}
-          {loading ? (
-            <p style={{ color: "#444", fontSize: 13 }}>Carregando títulos...</p>
-          ) : filtered.length === 0 ? (
-            <div style={{ background: "#111118", border: "1px solid rgba(212,175,55,0.08)", borderRadius: 4, padding: 48, textAlign: "center" }}>
-              <p style={{ color: "#444", fontSize: 14, fontWeight: 300 }}>
-                {search ? "Nenhum título encontrado." : "Nenhum título cadastrado ainda."}
-              </p>
-              {!search && (
-                <button onClick={() => setModal("new")} style={{ marginTop: 16, background: "none", border: "none", color: "#d4af37", fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
-                  Cadastrar primeiro título →
-                </button>
-              )}
-            </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
-              {filtered.map((t) => (
-                <ProcessTitleCard key={t.id} title={t} onEdit={setModal} onDelete={handleDelete} />
-              ))}
-            </div>
-          )}
-        </main>
+        <div style={{ display: "flex", gap: 20, marginTop: 40, paddingTop: 28, borderTop: "1px solid #e8e4dc", flexWrap: "wrap" }}>
+          {[
+            { icon: "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z", label: "Criptografado" },
+            { icon: "M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z", label: "LGPD" },
+            { icon: "M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z", label: "7 dias grátis" },
+          ].map((b) => (
+            <span key={b.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#bbb" }}>
+              <svg viewBox="0 0 24 24" strokeWidth="1.5" style={{ width: 14, height: 14, stroke: "#d4af37", fill: "none", flexShrink: 0 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d={b.icon} />
+              </svg>
+              {b.label}
+            </span>
+          ))}
+        </div>
       </div>
-
-      {modal && (
-        <ProcessTitleModal
-          title={modal === "new" ? null : modal}
-          onClose={() => setModal(null)}
-          onSaved={fetchTitles}
-        />
-      )}
     </div>
   );
 }
+
+export default Register;

@@ -20,6 +20,10 @@ model User {
   juizos  Juizo[]
   acoes  Acao[]
   processos  Processo[]
+  kanbanCards  KanbanCard[]
+  licenca          Licenca?
+  resetToken       String?
+  resetTokenExpiry DateTime?
 }
 
 model Process {
@@ -217,6 +221,9 @@ model Processo {
   custos          CustoProcessual[]
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
+  kanbanCards  KanbanCard[]
+  lancamentos  Lancamento[]
+  repassess    Repasse[]
 }
 
 model ProcessoCliente {
@@ -251,4 +258,76 @@ model CustoProcessual {
   tipo       CustoTipo
   pago       Boolean   @default(false)
   createdAt  DateTime  @default(now())
+}
+
+enum KanbanColuna {
+  BACKLOG
+  TRIAGEM
+  PRODUCAO
+  REVISAO
+  AGUARDANDO
+  PROTOCOLO
+  CONCLUIDO
+}
+
+enum KanbanPrioridade {
+  VERMELHO
+  AMARELO
+  VERDE
+  AZUL
+}
+
+model KanbanCard {
+  id          String           @id @default(uuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id])
+  titulo      String
+  descricao   String?
+  coluna      KanbanColuna     @default(BACKLOG)
+  prioridade  KanbanPrioridade @default(AZUL)
+  prazoFatal  DateTime?
+  responsavel String?
+  processoId  String?
+  processo    Processo?        @relation(fields: [processoId], references: [id])
+  ordem       Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+enum HonorarioStatus {
+  PAGO
+  PENDENTE
+  ATRASADO
+}
+
+model Lancamento {
+  id              String           @id @default(uuid())
+  processoId      String
+  processo        Processo         @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  valorTotal      Float
+  status          HonorarioStatus  @default(PENDENTE)
+  dataVencimento  DateTime
+  dataRecebimento DateTime?
+  descricao       String?
+  createdAt       DateTime         @default(now())
+}
+
+model Repasse {
+  id         String   @id @default(uuid())
+  processoId String
+  processo   Processo @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  parceiro   String
+  percentual Float
+  pago       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model Licenca {
+  id         String    @id @default(cuid())
+  codigo     String    @unique
+  usada      Boolean   @default(false)
+  usadaPor   User?     @relation(fields: [userId], references: [id])
+  userId     String?   @unique
+  criadaEm   DateTime  @default(now())
+  ativadaEm  DateTime?
 }

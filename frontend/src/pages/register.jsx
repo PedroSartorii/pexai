@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../services/api";
 
 function Register() {
@@ -10,6 +10,8 @@ function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [focused, setFocused] = useState(null);
+  const [cadastroConcluido, setCadastroConcluido] = useState(false);
+  const [licenca, setLicenca] = useState("");
   const navigate = useNavigate();
 
   async function handleRegister(e) {
@@ -21,10 +23,20 @@ function Register() {
       return;
     }
 
+    if (!licenca.trim()) {
+      setError("O código de licença é obrigatório.");
+      return;
+    }
+
     setLoading(true);
     try {
-      await api.post("/auth/register", { name, email, password });
-      navigate("/login");
+      await api.post("/auth/register", {
+        name,
+        email,
+        password,
+        codigoLicenca: licenca.trim(),
+      });
+      setCadastroConcluido(true);
     } catch (err) {
       setError(err.response?.data?.error || "Erro ao criar conta. Tente novamente.");
     } finally {
@@ -33,33 +45,43 @@ function Register() {
   }
 
   const inputStyle = (field) => ({
-    width: "100%",
-    padding: "14px 16px",
-    fontFamily: "'DM Sans', sans-serif",
-    fontSize: "15px",
-    fontWeight: 300,
-    color: "#1a1a2e",
-    background: "#fff",
+    width: "100%", padding: "14px 16px", fontFamily: "'DM Sans', sans-serif",
+    fontSize: "15px", fontWeight: 300, color: "#1a1a2e", background: "#fff",
     border: focused === field ? "1px solid #d4af37" : "1px solid #e0ddd5",
-    borderRadius: "2px",
-    outline: "none",
+    borderRadius: "2px", outline: "none",
     boxShadow: focused === field ? "0 0 0 3px rgba(212,175,55,0.08)" : "none",
     transition: "border-color 0.25s, box-shadow 0.25s",
-    boxSizing: "border-box",
-    display: "block",
+    boxSizing: "border-box", display: "block",
   });
 
   const labelStyle = (field) => ({
-    display: "block",
-    fontSize: "11px",
-    fontWeight: 500,
-    letterSpacing: "0.15em",
-    textTransform: "uppercase",
-    color: focused === field ? "#d4af37" : "#999",
-    marginBottom: "8px",
-    transition: "color 0.2s",
-    fontFamily: "'DM Sans', sans-serif",
+    display: "block", fontSize: "11px", fontWeight: 500, letterSpacing: "0.15em",
+    textTransform: "uppercase", color: focused === field ? "#d4af37" : "#999",
+    marginBottom: "8px", transition: "color 0.2s", fontFamily: "'DM Sans', sans-serif",
   });
+
+  if (cadastroConcluido) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0f", fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ textAlign: "center", padding: 48 }}>
+          <div style={{ width: 64, height: 64, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
+            <svg width="28" height="28" fill="none" stroke="#22c55e" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+          </div>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 36, fontWeight: 300, color: "#f0e6c8", marginBottom: 12 }}>Conta criada!</h2>
+          <p style={{ fontSize: 14, color: "#666", marginBottom: 32, fontWeight: 300 }}>Sua licença foi ativada com sucesso.</p>
+          <button
+            onClick={() => navigate("/login")}
+            onMouseEnter={e => { e.currentTarget.style.background = "#d4af37"; e.currentTarget.style.color = "#0a0a0f"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#1a1a2e"; e.currentTarget.style.color = "#f0e6c8"; }}
+            style={{ padding: "14px 40px", background: "#1a1a2e", color: "#f0e6c8", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 500, letterSpacing: "0.15em", textTransform: "uppercase", border: "none", borderRadius: 2, cursor: "pointer", transition: "all 0.25s" }}>
+            Fazer login →
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", background: "#0a0a0f", overflow: "hidden", fontFamily: "'DM Sans', sans-serif" }}>
@@ -100,74 +122,85 @@ function Register() {
       <div style={{ width: "clamp(360px, 40%, 520px)", minHeight: "100vh", background: "#f7f5f0", display: "flex", flexDirection: "column", justifyContent: "center", padding: "64px 56px", position: "relative", boxSizing: "border-box" }}>
         <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 1, background: "linear-gradient(to bottom, transparent, rgba(212,175,55,0.3), transparent)" }} />
 
-        <div style={{ marginBottom: 32 }}>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 36, fontWeight: 400, color: "#1a1a2e", marginBottom: 8 }}>Criar conta</h2>
-          <p style={{ fontSize: 14, color: "#888", fontWeight: 300 }}>Preencha os dados para começar</p>
+        {/* ── Formulário de cadastro ── */}
+        <div>
+            <div style={{ marginBottom: 32 }}>
+              <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 36, fontWeight: 400, color: "#1a1a2e", marginBottom: 8 }}>Criar conta</h2>
+              <p style={{ fontSize: 14, color: "#888", fontWeight: 300 }}>Preencha os dados para começar</p>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 32 }}>
+              <div style={{ flex: 1, height: 1, background: "#d4af37", opacity: 0.3 }} />
+              <div style={{ width: 6, height: 6, background: "#d4af37", transform: "rotate(45deg)", opacity: 0.6 }} />
+              <div style={{ flex: 1, height: 1, background: "#d4af37", opacity: 0.3 }} />
+            </div>
+
+            {error && (
+              <div style={{ background: "#fff0f0", border: "1px solid #ffcccc", borderRadius: 2, padding: "12px 16px", marginBottom: 24, fontSize: 13, color: "#cc3333" }}>
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleRegister} style={{ width: "100%" }}>
+              <div style={{ marginBottom: 20 }}>
+                <label style={labelStyle("name")}>Nome completo</label>
+                <input type="text" required placeholder="Seu nome" value={name}
+                  onFocus={() => setFocused("name")} onBlur={() => setFocused(null)}
+                  onChange={(e) => setName(e.target.value)} style={inputStyle("name")} />
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <label style={labelStyle("email")}>Endereço de e-mail</label>
+                <input type="email" required placeholder="seu@email.com" value={email}
+                  onFocus={() => setFocused("email")} onBlur={() => setFocused(null)}
+                  onChange={(e) => setEmail(e.target.value)} style={inputStyle("email")} />
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <label style={labelStyle("password")}>Senha</label>
+                <input type="password" required placeholder="••••••••" value={password}
+                  onFocus={() => setFocused("password")} onBlur={() => setFocused(null)}
+                  onChange={(e) => setPassword(e.target.value)} style={inputStyle("password")} />
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <label style={labelStyle("confirmPassword")}>Confirmar senha</label>
+                <input type="password" required placeholder="••••••••" value={confirmPassword}
+                  onFocus={() => setFocused("confirmPassword")} onBlur={() => setFocused(null)}
+                  onChange={(e) => setConfirmPassword(e.target.value)} style={inputStyle("confirmPassword")} />
+                {confirmPassword && password !== confirmPassword && (
+                  <span style={{ fontSize: 11, color: "#cc3333", marginTop: 4, display: "block" }}>As senhas não coincidem.</span>
+                )}
+                {confirmPassword && password === confirmPassword && password.length >= 6 && (
+                  <span style={{ fontSize: 11, color: "#22c55e", marginTop: 4, display: "block" }}>✓ Senhas coincidem.</span>
+                )}
+              </div>
+
+              {/* Campo de licença — dentro do form, antes do botão */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={labelStyle("licenca")}>Código de licença</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="PEXAI-XXXX-XXXX-XXXX"
+                  value={licenca}
+                  onFocus={() => setFocused("licenca")}
+                  onBlur={() => setFocused(null)}
+                  onChange={(e) => setLicenca(e.target.value.toUpperCase())}
+                  style={inputStyle("licenca")}
+                />
+              </div>
+
+              <button type="submit" disabled={loading}
+                onMouseEnter={e => { e.currentTarget.style.background = "#d4af37"; e.currentTarget.style.color = "#0a0a0f"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "#1a1a2e"; e.currentTarget.style.color = "#f0e6c8"; }}
+                style={{ width: "100%", padding: "15px", marginTop: 8, background: "#1a1a2e", color: "#f0e6c8", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 500, letterSpacing: "0.15em", textTransform: "uppercase", border: "none", borderRadius: 2, cursor: loading ? "not-allowed" : "pointer", transition: "background 0.25s, color 0.25s", boxSizing: "border-box", display: "block", opacity: loading ? 0.7 : 1 }}>
+                {loading ? "Criando conta..." : "Criar conta"}
+              </button>
+            </form>
+
+            <p style={{ marginTop: 28, textAlign: "center", fontSize: 13, color: "#aaa", fontWeight: 300 }}>
+              Já tem uma conta?{" "}
+              <Link to="/login" style={{ color: "#d4af37", textDecoration: "none", fontWeight: 500 }}>Fazer login</Link>
+            </p>
         </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 32 }}>
-          <div style={{ flex: 1, height: 1, background: "#d4af37", opacity: 0.3 }} />
-          <div style={{ width: 6, height: 6, background: "#d4af37", transform: "rotate(45deg)", opacity: 0.6 }} />
-          <div style={{ flex: 1, height: 1, background: "#d4af37", opacity: 0.3 }} />
-        </div>
-
-        {error && (
-          <div style={{ background: "#fff0f0", border: "1px solid #ffcccc", borderRadius: 2, padding: "12px 16px", marginBottom: 24, fontSize: 13, color: "#cc3333", fontFamily: "'DM Sans', sans-serif" }}>
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleRegister} style={{ width: "100%" }}>
-          <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle("name")}>Nome completo</label>
-            <input
-              type="text" required placeholder="Seu nome" value={name}
-              onFocus={() => setFocused("name")} onBlur={() => setFocused(null)}
-              onChange={(e) => setName(e.target.value)} style={inputStyle("name")}
-            />
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle("email")}>Endereço de e-mail</label>
-            <input
-              type="email" required placeholder="seu@email.com" value={email}
-              onFocus={() => setFocused("email")} onBlur={() => setFocused(null)}
-              onChange={(e) => setEmail(e.target.value)} style={inputStyle("email")}
-            />
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle("password")}>Senha</label>
-            <input
-              type="password" required placeholder="••••••••" value={password}
-              onFocus={() => setFocused("password")} onBlur={() => setFocused(null)}
-              onChange={(e) => setPassword(e.target.value)} style={inputStyle("password")}
-            />
-          </div>
-
-          <div style={{ marginBottom: 8 }}>
-            <label style={labelStyle("confirmPassword")}>Confirmar senha</label>
-            <input
-              type="password" required placeholder="••••••••" value={confirmPassword}
-              onFocus={() => setFocused("confirmPassword")} onBlur={() => setFocused(null)}
-              onChange={(e) => setConfirmPassword(e.target.value)} style={inputStyle("confirmPassword")}
-            />
-          </div>
-
-          <button
-            type="submit" disabled={loading}
-            onMouseEnter={e => { e.currentTarget.style.background = "#d4af37"; e.currentTarget.style.color = "#0a0a0f"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#1a1a2e"; e.currentTarget.style.color = "#f0e6c8"; }}
-            style={{ width: "100%", padding: "15px", marginTop: 16, background: "#1a1a2e", color: "#f0e6c8", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 500, letterSpacing: "0.15em", textTransform: "uppercase", border: "none", borderRadius: 2, cursor: loading ? "not-allowed" : "pointer", transition: "background 0.25s, color 0.25s", boxSizing: "border-box", display: "block", opacity: loading ? 0.7 : 1 }}
-          >
-            {loading ? "Criando conta..." : "Criar conta"}
-          </button>
-        </form>
-
-        <p style={{ marginTop: 28, textAlign: "center", fontSize: 13, color: "#aaa", fontWeight: 300 }}>
-          Já tem uma conta?{" "}
-          <a href="/login" style={{ color: "#d4af37", textDecoration: "none", fontWeight: 500 }}>Fazer login</a>
-        </p>
       </div>
     </div>
   );
