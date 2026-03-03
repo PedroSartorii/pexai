@@ -1,6 +1,7 @@
 const prisma = require("../prisma");
 const { generateLegalText } = require("../services/aiService");
 const { generateDocx } = require("../utils/docxGenerator");
+const { anonymizeForAI, restoreFromAI } = require("../utils/anonymize"); // ← NOVO
 
 // ─── Busca para ComboBox ──────────────────────────────────────────────────────
 exports.searchClientes = async (req, res) => {
@@ -207,7 +208,6 @@ exports.update = async (req, res) => {
       });
     }
 
-    // Apenas novos custos (sem id)
     const newCustos = (custos || []).filter(c => !c.id);
     if (newCustos.length) {
       await prisma.custoProcessual.createMany({
@@ -252,7 +252,7 @@ exports.remove = async (req, res) => {
   }
 };
 
-// ─── Gerar minuta com IA (mantém compatibilidade com aiService existente) ─────
+// ─── Gerar minuta com IA ──────────────────────────────────────────────────────
 exports.gerarMinuta = async (req, res) => {
   try {
     const userId = req.userId;
@@ -272,15 +272,15 @@ exports.gerarMinuta = async (req, res) => {
       `${c.cliente?.nome || c.clienteLivre} (${c.qualificacao?.nome || c.qualLivre || "sem qualificação"})`
     ).join(", ");
 
-    const envolvidos = processo.envolvidos.map((e) =>
+    const envolvidosStr = processo.envolvidos.map((e) =>
       `${e.nome} — ${e.papel || "envolvido"}`
     ).join(", ");
 
-    // Reutiliza o generateLegalText existente no seu aiService
-    const generatedText = await generateLegalText({
-      authorName: partes || processo.titulo,
-      defendantName: envolvidos || "Não informado",
-      cpfCnpj: processo.clientes[0]?.cliente?.cpfCnpj || "Não informado",
+    // ── CORREÇÃO LGPD: montar payload e anonimizar antes de enviar ao Gemini ──
+    const payload = {
+      authorName:    partes || processo.titulo,
+      defendantName: envolvidosStr || "Não informado",
+      cpfCnpj:       processo.clientes[0]?.cliente?.cpfCnpj || "Não informado",
       vara: processo.juizo
         ? `${processo.juizo.tribunal} — ${processo.juizo.orgaoJulgador}`
         : (processo.juizoLivre || "Não informado"),
@@ -292,9 +292,13 @@ exports.gerarMinuta = async (req, res) => {
         `Honorários: ${processo.honorarios || "Não informado"}`,
         `Prazos: ${processo.prazos || "Não informado"}`,
       ].join("\n"),
-    });
+    };
 
-    // Salva o texto gerado no processo
+    const { anonymized, mapping } = anonymizeForAI(payload);
+    const rawText = await generateLegalText(anonymized);   // IA recebe dados sem PII
+    const generatedText = restoreFromAI(rawText, mapping); // nomes reais voltam após a geração
+    // ── FIM DA CORREÇÃO ───────────────────────────────────────────────────────
+
     await prisma.processo.update({
       where: { id },
       data: { generatedText },
@@ -307,7 +311,7 @@ exports.gerarMinuta = async (req, res) => {
   }
 };
 
-// ─── Download DOCX (mantém compatibilidade) ───────────────────────────────────
+// ─── Download DOCX ────────────────────────────────────────────────────────────
 exports.downloadDocx = async (req, res) => {
   try {
     const { id } = req.params;

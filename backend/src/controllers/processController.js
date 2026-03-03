@@ -1,6 +1,19 @@
+/**
+ * controllers/processController.js  (VERSÃO CORRIGIDA)
+ *
+ * Correção aplicada:
+ *   - Dados reais (authorName, defendantName, cpfCnpj) são anonimizados
+ *     ANTES de serem enviados ao Gemini via generateLegalText().
+ *   - Após a geração, os tokens são substituídos de volta pelos valores reais
+ *     no texto final que é salvo no banco.
+ *
+ * Isso resolve a falha LGPD Art. 33 (transferência internacional de dados pessoais).
+ */
+
 const prisma = require("../prisma");
 const { generateLegalText } = require("../services/aiService");
 const { generateDocx } = require("../utils/docxGenerator");
+const { anonymizeForAI, restoreFromAI } = require("../utils/anonymize"); // ← NOVO
 
 exports.createProcess = async (req, res) => {
   try {
@@ -12,7 +25,8 @@ exports.createProcess = async (req, res) => {
 
     const structuredData = { authorName, defendantName, cpfCnpj, vara, caseValue };
 
-    const generatedText = await generateLegalText({
+    // ── CORREÇÃO: anonimizar antes de enviar à IA ──────────────────────────────
+    const { anonymized, mapping } = anonymizeForAI({
       authorName,
       defendantName,
       cpfCnpj,
@@ -20,6 +34,14 @@ exports.createProcess = async (req, res) => {
       caseValue,
       narrative,
     });
+
+    // A IA recebe dados sem PII real — nomes e CPF substituídos por tokens
+    const rawGeneratedText = await generateLegalText(anonymized);
+
+    // Restaura os dados reais no texto APÓS retorno da IA
+    // O texto final salvo no banco contém os valores corretos
+    const generatedText = restoreFromAI(rawGeneratedText, mapping);
+    // ── FIM DA CORREÇÃO ────────────────────────────────────────────────────────
 
     const process = await prisma.process.create({
       data: {
@@ -43,6 +65,8 @@ exports.createProcess = async (req, res) => {
     res.status(500).json({ error: "Erro interno ao criar processo." });
   }
 };
+
+// ── Demais métodos sem alteração ───────────────────────────────────────────────
 
 exports.listProcesses = async (req, res) => {
   try {
