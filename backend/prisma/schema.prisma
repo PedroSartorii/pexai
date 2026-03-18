@@ -24,6 +24,7 @@ model User {
   licenca          Licenca?
   resetToken       String?
   resetTokenExpiry DateTime?
+  tiposMinuta  TipoMinuta[]
 }
 
 model Process {
@@ -330,4 +331,18 @@ model Licenca {
   userId     String?   @unique
   criadaEm   DateTime  @default(now())
   ativadaEm  DateTime?
+}
+
+model TipoMinuta {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  nome            String
+  descricao       String?
+  prompt          String
+  nomeArquivo     String?
+  caminhoArquivo  String?
+  mimeType        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

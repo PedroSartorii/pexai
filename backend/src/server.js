@@ -15,6 +15,7 @@ const lancamentoRoutes = require("./routes/lancamentoRoutes");
 const repasseRoutes    = require("./routes/repasseRoutes");
 const contatoRoutes = require("./routes/contatoRoutes");
 const licencaRoutes = require("./routes/licencaRoutes");
+const tipoMinutaRoutes = require("./routes/tipoMinutaRoutes");
 
 const app = express();
 
@@ -28,6 +29,10 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
 app.get("/health", (req, res) => res.status(200).send("OK"));
 app.use("/auth", authRoutes);
 app.use("/process", processRoutes);
@@ -43,14 +48,14 @@ app.use("/lancamentos", lancamentoRoutes);
 app.use("/repassess",   repasseRoutes);
 app.use("/contato", contatoRoutes);
 app.use("/admin/licencas", licencaRoutes);
-
+app.use("/tipos-minuta", tipoMinutaRoutes);
 
 
 app.get("/", (req, res) => {
   res.json({ message: "API PexAI funcionando" });
 });
 
-const PORT = process.env.PORT || 8080; // Para voltar em produção, rodar na porta 8080, se não roda na 3000
+const PORT = process.env.PORT || 3000; // Para voltar em produção, rodar na porta 8080, se não roda na 3000
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor rodando na porta ${PORT}`);

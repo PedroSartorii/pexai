@@ -15,6 +15,7 @@ import LancamentoRegister from "./pages/LancamentoRegister";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import PrivateRoute from "./components/PrivateRoute";
+import TipoMinutaRegister from "./pages/TipoMinutaRegister";
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
         <Route path="/lancamentos" element={<PrivateRoute><LancamentoRegister /></PrivateRoute>} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/tipos-minuta" element={<PrivateRoute><TipoMinutaRegister /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   );
